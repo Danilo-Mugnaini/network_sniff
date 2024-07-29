@@ -1,24 +1,17 @@
-import socket
+from scapy.all import sniff, Raw, hexdump, conf, L3RawSocket
 
-def start_sniffing():
-    # Create a raw socket and bind it to the public interface
-    conn = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_IP)
-    conn.bind(("192.168.10.180", 0))  # Replace with your IP address
-    conn.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
-    conn.ioctl(socket.SIO_RCVALL, socket.RCVALL_ON)
+def packet_callback(packet):
+    print(f"Packet: {packet.summary()}")
+    if Raw in packet:
+        print(f"Raw data: {packet[Raw].load}")
+        hexdump(packet[Raw].load)
 
+def start_sniffing(interface=None):
     print("Starting packet capture...")
+    sniff(iface=interface, prn=packet_callback, store=False)
 
-    try:
-        while True:
-            # Receive a packet
-            raw_data, addr = conn.recvfrom(65565)
-            print(raw_data)
-    except KeyboardInterrupt:
-        print("Stopping packet capture.")
-    finally:
-        conn.ioctl(socket.SIO_RCVALL, socket.RCVALL_OFF)
-        conn.close()
+# Set Scapy to use L3RawSocket for Layer 3 sniffing
+conf.L3socket = L3RawSocket
 
-# Start sniffing (replace with your correct local IP address)
-start_sniffing()
+# Replace 'Wi-Fi' with the appropriate interface name for your system
+start_sniffing("Wi-Fi")
